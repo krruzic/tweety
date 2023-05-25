@@ -137,7 +137,7 @@ class Request:
         return response
 
     def perform_search(self, query, cursor, search_type):
-        request_data = self.__builder.search(query, False, search_type, cursor)
+        request_data = self.__builder.search(query, search_type, cursor)
         response = self.__get_response__(**request_data)
         return response
 

@@ -1,6 +1,6 @@
 import functools
 import re
-from typing import Union
+from typing import Literal, Optional, Union
 
 from .types.n_types import Proxy
 from .exceptions_ import *
@@ -22,7 +22,12 @@ def AuthRequired(f):
 
 
 class Twitter:
-    def __init__(self, max_retries: int = 10, proxy: Union[dict, Proxy] = None, cookies: Union[str, dict] = None):
+    def __init__(
+        self,
+        max_retries: int = 10,
+        proxy: Union[dict, Proxy] = None,
+        cookies: Union[str, dict] = None,
+    ):
         """
         Constructor of the Twitter Public class
 
@@ -34,7 +39,12 @@ class Twitter:
         self.request = Request(max_retries=max_retries, proxy=proxy, cookies=cookies)
         self.user = self.get_user_info() if cookies is not None else None
 
-    def get_user_info(self, username: str = None, banner_extensions: bool = False, image_extensions: bool = False):
+    def get_user_info(
+        self,
+        username: str = None,
+        banner_extensions: bool = False,
+        image_extensions: bool = False,
+    ):
         """
         Get the User Info of the specified username
 
@@ -49,17 +59,21 @@ class Twitter:
 
         if not banner_extensions or banner_extensions is False:
             try:
-                del user_raw['data']['user']['result']['legacy']['profile_banner_extensions']
+                del user_raw["data"]["user"]["result"]["legacy"][
+                    "profile_banner_extensions"
+                ]
             except KeyError:
                 pass
 
         if not image_extensions or image_extensions is False:
             try:
-                del user_raw['data']['user']['result']['legacy']['profile_image_extensions']
+                del user_raw["data"]["user"]["result"]["legacy"][
+                    "profile_image_extensions"
+                ]
             except KeyError:
                 pass
 
-        return User(user_raw['data']['user']['result'])
+        return User(user_raw["data"]["user"]["result"])
 
     @property
     def user_id(self):
@@ -83,7 +97,14 @@ class Twitter:
 
         return user_id
 
-    def get_tweets(self, username: Union[str, int, User], pages: int = 1, replies: bool = False, wait_time: int = 2, cursor: str = None):
+    def get_tweets(
+        self,
+        username: Union[str, int, User],
+        pages: int = 1,
+        replies: bool = False,
+        wait_time: int = 2,
+        cursor: str = None,
+    ):
         """
          Get the tweets from a user
 
@@ -100,14 +121,23 @@ class Twitter:
 
         user_id = self._get_user_id(username)
 
-        userTweets = UserTweets(user_id, self.request, pages, replies, wait_time, cursor)
+        userTweets = UserTweets(
+            user_id, self.request, pages, replies, wait_time, cursor
+        )
 
         # TODO : Find proper way to run the generator
         results = [i for i in userTweets.generator()]
 
         return userTweets
 
-    def iter_tweets(self,  username: Union[str, int, User], pages: int = 1, replies: bool = False, wait_time: int = 2, cursor: str = None):
+    def iter_tweets(
+        self,
+        username: Union[str, int, User],
+        pages: int = 1,
+        replies: bool = False,
+        wait_time: int = 2,
+        cursor: str = None,
+    ):
         """
          Generator for getting the tweets from a user
 
@@ -124,7 +154,9 @@ class Twitter:
 
         user_id = self._get_user_id(username)
 
-        userTweets = UserTweets(user_id, self.request, pages, replies, wait_time, cursor)
+        userTweets = UserTweets(
+            user_id, self.request, pages, replies, wait_time, cursor
+        )
 
         return userTweets.generator()
 
@@ -136,69 +168,56 @@ class Twitter:
         """
         trends = []
         response = self.request.get_trends()
-        for i in response.json()['timeline']['instructions'][1]['addEntries']['entries'][1]['content']['timelineModule']['items']:
+        for i in response.json()["timeline"]["instructions"][1]["addEntries"][
+            "entries"
+        ][1]["content"]["timelineModule"]["items"]:
             data = {
-                "name": i['item']['content']['trend']['name'],
-                "url": str(i['item']['content']['trend']['url']['url']).replace("twitter://",
-                                                                                "https://twitter.com/").replace("query",
-                                                                                                                "q"),
+                "name": i["item"]["content"]["trend"]["name"],
+                "url": str(i["item"]["content"]["trend"]["url"]["url"])
+                .replace("twitter://", "https://twitter.com/")
+                .replace("query", "q"),
             }
             try:
-                if i['item']['content']['trend']['trendMetadata']['metaDescription']:
-                    data['tweet_count'] = i['item']['content']['trend']['trendMetadata']['metaDescription']
+                if i["item"]["content"]["trend"]["trendMetadata"]["metaDescription"]:
+                    data["tweet_count"] = i["item"]["content"]["trend"][
+                        "trendMetadata"
+                    ]["metaDescription"]
             except:
                 pass
             trends.append(Trends(data))
         return trends
 
-    @AuthRequired
-    def search(self, keyword: str, pages: int = 1, filter_: str = None, wait_time: int = 2, cursor: str = None):
+    def search(
+        self,
+        query: str,
+        pages: int = 1,
+        search_type: Literal["Latest", "users", "photos", "videos"] = "Latest",
+        wait_time: int = 2,
+        cursor: Optional[str] = None,
+    ):
         """
         Search for a keyword or hashtag on Twitter
 
-        :param keyword: (`str`) The keyword which is supposed to be searched
+        :param query: (`str`) The keyword which is supposed to be searched
         :param pages: (`int`) The number of pages to get
-        :param filter_: (
-           `str`| `filters.SearchFilters.Users()`| `filters.SearchFilters.Latest()` | `filters.SearchFilters.Photos()` | `filters.SearchFilters.Videos()`
-        )
+        :param search_type: (`str`) The type of search to perform (Latest,user,photos,videos)
         :param wait_time : (`int`) seconds to wait between multiple requests
         :param cursor: (`str`) Pagination cursor if you want to get the pages from that cursor up-to (This cursor is different from actual API cursor)
 
 
-        :return: .types.search.Search | if iter: (.types.search.Search, list[.types.twDataTypes.Tweet])
+        :return: list[.types.twDataTypes.Tweet]
         """
-        if wait_time is None:
-            wait_time = 0
-
-        search = Search(keyword, self.request, pages, filter_, wait_time, cursor)
-
-        # TODO : Find proper way to run the generator
-        results = [i for i in search.generator()]
-
-        return search
-
-    @AuthRequired
-    def iter_search(self, keyword: str, pages: int = 1, filter_: str = None, wait_time: int = 2, cursor: str = None):
-        """
-        Search for a keyword or hashtag on Twitter
-
-        :param keyword: (`str`) The keyword which is supposed to be searched
-        :param pages: (`int`) The number of pages to get
-        :param filter_: (
-           `str`| `filters.SearchFilters.Users()`| `filters.SearchFilters.Latest()` | `filters.SearchFilters.Photos()` | `filters.SearchFilters.Videos()`
-        )
-        :param wait_time : (`int`) seconds to wait between multiple requests
-        :param cursor: (`str`) Pagination cursor if you want to get the pages from that cursor up-to (This cursor is different from actual API cursor)
-
-
-        :return: (.types.search.Search, list[.types.twDataTypes.Tweet])
-        """
-        if wait_time is None:
-            wait_time = 0
-
-        search = Search(keyword, self.request, pages, filter_, wait_time, cursor)
-
-        return search.generator()
+        response = self.request.perform_search(query, cursor, search_type)
+        # print(response)
+        tweets = []
+        for i in response["data"]["search_by_raw_query"]["search_timeline"]["timeline"][
+            "instructions"
+        ][0]["entries"]:
+            if "itemContent" not in i["content"]:
+                continue
+            tweet_data = i["content"]["itemContent"]["tweet_results"]["result"]
+            tweets.append(Tweet(response, tweet_data, self.request))
+        return tweets
 
     def tweet_detail(self, identifier: str):
         """
@@ -214,11 +233,15 @@ class Twitter:
         r = self.request.get_tweet_detail(tweetId)
 
         try:
-            for entry in r['data']['threaded_conversation_with_injections_v2']['instructions'][0]['entries']:
-                if str(entry['entryId']).split("-")[0] == "tweet":
-                    raw_tweet = entry['content']['itemContent']['tweet_results']['result']
+            for entry in r["data"]["threaded_conversation_with_injections_v2"][
+                "instructions"
+            ][0]["entries"]:
+                if str(entry["entryId"]).split("-")[0] == "tweet":
+                    raw_tweet = entry["content"]["itemContent"]["tweet_results"][
+                        "result"
+                    ]
 
-                    if raw_tweet['rest_id'] == str(tweetId):
+                    if raw_tweet["rest_id"] == str(tweetId):
                         return Tweet(r, raw_tweet, self.request, True, False, True)
 
         except KeyError:

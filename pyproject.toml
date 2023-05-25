@@ -1,6 +1,20 @@
+[tool.poetry]
+name = "tweety"
+version = "0.1.0"
+description = ""
+authors = []
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = ">=3.7.0,<4.0"
+beautifulsoup4 = "^4.12.2"
+httpx = "^0.24.1"
+openpyxl = "^3.1.2"
+dateutils = "^0.6.12"
+tqdm = "^4.65.0"
+pysocks = ">=1.7.1,<1.8.0"
+
+
 [build-system]
-requires = [
-    "setuptools>=42",
-    "wheel"
-]
-build-backend = "setuptools.build_meta"
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

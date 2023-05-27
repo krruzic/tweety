@@ -1,7 +1,10 @@
 import time
 import traceback
+from typing import Literal
 
-from . import Tweet, Excel, User, deprecated
+from . import Excel, Tweet, User, deprecated
+
+SearchFilter = Literal["Latest", "users", "photos", "videos"]
 
 
 class Search(dict):
@@ -21,7 +24,7 @@ class Search(dict):
         return "Search(keyword={}, count={}, filter={})".format(
             self.keyword,
             len(self.users) if self.filter == "users" else len(self.tweets),
-            self.filter
+            self.filter,
         )
 
     def get_next_page(self):
@@ -29,73 +32,86 @@ class Search(dict):
             response = self.http.perform_search(self.keyword, self.cursor, self.filter)
             thisTweets = self._parse_response(response)
 
-            self['is_next_page'] = self.is_next_page
-            self['cursor'] = self.cursor
+            self["is_next_page"] = self.is_next_page
+            self["cursor"] = self.cursor
 
             return thisTweets
 
         return []
+
     def _parse_response(self, response):
         thisObjects = []
         if self.filter == "users":
-            for raw_user in response['globalObjects']['users'].values():
+            for raw_user in response["globalObjects"]["users"].values():
                 try:
                     user = User(raw_user)
                     self.users.append(user)
                     thisObjects.append(user)
-                except:
+                except BaseException:
                     pass
-            self['users'] = self.users
+            self["users"] = self.users
         else:
-            users = response['globalObjects']['users']
-            for tweet_id, raw_tweet in response['globalObjects']['tweets'].items():
+            users = response["globalObjects"]["users"]
+            for tweet_id, raw_tweet in response["globalObjects"]["tweets"].items():
                 try:
-                    raw_tweet['rest_id'], raw_tweet['author'] = tweet_id, users.get(str(raw_tweet['user_id']))
+                    raw_tweet["rest_id"], raw_tweet["author"] = tweet_id, users.get(
+                        str(raw_tweet["user_id"])
+                    )
                     tweet = Tweet(response, raw_tweet, self.http, False, True)
                     self.tweets.append(tweet)
                     thisObjects.append(tweet)
-                except:
+                except BaseException:
                     traceback.print_exc()
                     pass
 
-            self['tweets'] = self.tweets
+            self["tweets"] = self.tweets
 
         self.is_next_page = self._get_cursor(response)
         return thisObjects
 
     def _get_cursor(self, response):
         if self.filter == "users":
-            for i in response['timeline']['instructions'][-1]['addEntries']['entries']:
-                if str(i['entryId']).split("-")[0] == "cursor":
-                    if i['content']['operation']['cursor']['cursorType'] == "Bottom":
-                        newCursor = i['content']['operation']['cursor']['value']
+            for i in response["timeline"]["instructions"][-1]["addEntries"]["entries"]:
+                if str(i["entryId"]).split("-")[0] == "cursor":
+                    if i["content"]["operation"]["cursor"]["cursorType"] == "Bottom":
+                        newCursor = i["content"]["operation"]["cursor"]["value"]
                         if newCursor == self.cursor:
                             return False
                         self.cursor = newCursor
                         return True
         else:
-            for i in response['timeline']['instructions'][0]['addEntries']['entries']:
+            for i in response["timeline"]["instructions"][0]["addEntries"]["entries"]:
                 try:
-                    if i['content']['operation']:
-                        if i['content']['operation']['cursor']['cursorType'] == "Bottom":
-                            newCursor = i['content']['operation']['cursor']['value']
+                    if i["content"]["operation"]:
+                        if (
+                            i["content"]["operation"]["cursor"]["cursorType"]
+                            == "Bottom"
+                        ):
+                            newCursor = i["content"]["operation"]["cursor"]["value"]
                             if newCursor == self.cursor:
                                 return False
                             self.cursor = newCursor
                             return True
-                except:
+                except BaseException:
                     pass
                 try:
-                    for j in response['timeline']['instructions']:
+                    for j in response["timeline"]["instructions"]:
                         for key in j.keys():
                             if key == "replaceEntry":
-                                if j['replaceEntry']['entry']['content']['operation']['cursor']['cursorType'] == "Bottom":
-                                    newCursor = j['replaceEntry']['entry']['content']['operation']['cursor']['value']
+                                if (
+                                    j["replaceEntry"]["entry"]["content"]["operation"][
+                                        "cursor"
+                                    ]["cursorType"]
+                                    == "Bottom"
+                                ):
+                                    newCursor = j["replaceEntry"]["entry"]["content"][
+                                        "operation"
+                                    ]["cursor"]["value"]
                                     if newCursor == self.cursor:
                                         return False
                                     self.cursor = newCursor
                                     return True
-                except:
+                except BaseException:
                     pass
         return False
 

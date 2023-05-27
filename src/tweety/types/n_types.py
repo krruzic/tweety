@@ -1,4 +1,6 @@
-from ..exceptions_ import *
+from typing import Optional
+
+from ..exceptions import *
 
 PROXY_TYPE_SOCKS4 = SOCKS4 = 1
 PROXY_TYPE_SOCKS5 = SOCKS5 = 2
@@ -6,7 +8,14 @@ PROXY_TYPE_HTTP = HTTP = 3
 
 
 class Proxy:
-    def __init__(self, host: str, port: int, proxy_type: int, username: str = None, password: str = None):
+    def __init__(
+        self,
+        host: str,
+        port: int,
+        proxy_type: int,
+        username: Optional[str] = None,
+        password: Optional[str] = None,
+    ):
         self.host = host
         self.password = password
         self.proxy_type = proxy_type
@@ -37,10 +46,7 @@ class Proxy:
 
 
 class GenericError:
-    EXCEPTIONS = {
-        32: InvalidCredentials,
-        144: InvalidTweetIdentifier
-    }
+    EXCEPTIONS = {32: InvalidCredentials, 144: InvalidTweetIdentifier}
 
     def __init__(self, response, error_code, message=None):
         self.response = response
@@ -60,6 +66,5 @@ class GenericError:
             error_code=self.error_code,
             error_name=TWITTER_ERRORS[self.error_code],
             response=self.response,
-            message="[{}] {}".format(self.error_code, self.message)
+            message="[{}] {}".format(self.error_code, self.message),
         )
-

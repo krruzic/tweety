@@ -1,17 +1,21 @@
 import json
-from typing import Literal, Optional
-from urllib.parse import urlencode
 import random
 import string
 from functools import wraps
+from typing import Any, Callable, Dict, Literal, Optional, Tuple
+from urllib.parse import urlencode
+
+from tweety.types.search import SearchFilter
 
 REQUEST_USER_AGENT = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36"
 REQUEST_PLATFORMS = ["Linux", "Windows"]
 
 
-def return_with_headers(func):
+def return_with_headers(
+    func: Callable[..., Tuple[str, Any]]
+) -> Callable[..., Dict[str, Any]]:
     @wraps(func)
-    def wrapper(self, *arg, **kw):
+    def wrapper(self, *arg, **kw) -> Dict[str, Any]:
         method, url = func(self, *arg, **kw)
         return dict(method=method, headers=self._get_headers(), url=url)
 
@@ -70,7 +74,6 @@ class UrlBuilder:
 
     def __init__(self, cookies=None):
         self.cookies = cookies
-        self.user_id = None
         self.guest_token = None
 
     def _get_headers(self):
@@ -93,13 +96,10 @@ class UrlBuilder:
             "x-twitter-client-language": "en",
         }
 
-        if self.guest_token or self.cookies:
+        if self.guest_token:
             headers["content-type"] = "application/json"
-            # headers['referer'] = f'https://twitter.com/{self.username}'
             headers["sec-fetch-site"] = "same-origin"
-
-            if self.guest_token:
-                headers["x-guest-token"] = self.guest_token
+            headers["x-guest-token"] = self.guest_token
 
         return headers
 
@@ -122,9 +122,9 @@ class UrlBuilder:
         return "POST", self.URL_API_INIT
 
     @return_with_headers
-    def user_by_screen_name(self, username):
+    def user_by_screen_name(self, username: str):
         variables = {
-            "screen_name": str(username),
+            "screen_name": username,
             "withSafetyModeUserFields": True,
             "withSuperFollowsUserFields": True,
             "withDownvotePerspective": False,
@@ -145,7 +145,7 @@ class UrlBuilder:
     def search(
         self,
         query: str,
-        search_type: Literal["Latest", "users", "photos", "videos"] = "Latest",
+        search_type: SearchFilter = "Latest",
         cursor: Optional[str] = None,
     ):
         variables = {
@@ -170,7 +170,7 @@ class UrlBuilder:
         return "GET", self._build(self.URL_SEARCH, urlencode(params))
 
     @return_with_headers
-    def user_tweets(self, user_id, replies=False, cursor=None):
+    def user_tweets(self, user_id: int, replies=False, cursor=None):
         variables = {
             "userId": str(user_id),
             "count": 40,
@@ -243,7 +243,7 @@ class UrlBuilder:
         return "GET", self._build(self.URL_TRENDS, urlencode(params))
 
     @return_with_headers
-    def tweet_detail(self, tweet_id):
+    def tweet_detail(self, tweet_id: int):
         variables = {
             "focalTweetId": str(tweet_id),
             "with_rux_injections": False,

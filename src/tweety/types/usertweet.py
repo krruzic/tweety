@@ -1,11 +1,20 @@
 import time
-import traceback
-from ..exceptions_ import UserProtected, UserNotFound
-from . import Tweet, Excel, deprecated
+from typing import Optional
+
+from ..exceptions import UserNotFound, UserProtected
+from . import Excel, Tweet, deprecated
 
 
 class UserTweets(dict):
-    def __init__(self, user_id, http, pages=1, get_replies: bool = True, wait_time=2, cursor=None):
+    def __init__(
+        self,
+        user_id,
+        http,
+        pages: int = 1,
+        get_replies: bool = True,
+        wait_time: int = 2,
+        cursor: Optional[str] = None,
+    ):
         super().__init__()
         self.tweets = []
         self.get_replies = get_replies
@@ -19,32 +28,41 @@ class UserTweets(dict):
 
     @staticmethod
     def _get_entries(response):
-        instructions = response['data']['user']['result']['timeline_v2']['timeline']['instructions']
+        instructions = response["data"]["user"]["result"]["timeline_v2"]["timeline"][
+            "instructions"
+        ]
         for instruction in instructions:
             if instruction.get("type") == "TimelineAddEntries":
-                return instruction['entries']
+                return instruction["entries"]
 
         return []
 
     @staticmethod
     def _get_tweet_content_key(tweet):
-        if str(tweet['entryId']).split("-")[0] == "tweet":
-            return [tweet['content']['itemContent']['tweet_results']['result']]
+        if str(tweet["entryId"]).split("-")[0] == "tweet":
+            return [tweet["content"]["itemContent"]["tweet_results"]["result"]]
 
-        if str(tweet['entryId']).split("-")[0] == "homeConversation":
-            return [item['item']['itemContent']['tweet_results']['result'] for item in tweet["content"]["items"]]
+        if str(tweet["entryId"]).split("-")[0] == "homeConversation":
+            return [
+                item["item"]["itemContent"]["tweet_results"]["result"]
+                for item in tweet["content"]["items"]
+            ]
 
         return []
 
     def get_next_page(self):
         _tweets = []
         if self.is_next_page:
-            response = self.http.get_tweets(self.user_id, replies=self.get_replies, cursor=self.cursor)
+            response = self.http.get_tweets(
+                self.user_id, replies=self.get_replies, cursor=self.cursor
+            )
 
-            if not response['data']['user'].get("result"):
-                raise UserNotFound(error_code=50, error_name="GenericUserNotFound", response=response)
+            if not response["data"]["user"].get("result"):
+                raise UserNotFound(
+                    error_code=50, error_name="GenericUserNotFound", response=response
+                )
 
-            if response['data']['user']['result']['__typename'] == "UserUnavailable":
+            if response["data"]["user"]["result"]["__typename"] == "UserUnavailable":
                 raise UserProtected(403, "UserUnavailable", None)
 
             entries = self._get_entries(response)
@@ -56,7 +74,7 @@ class UserTweets(dict):
                         parsed = Tweet(response, tweet, self.http)
                         _tweets.append(parsed)
                         # yield parsed
-                    except:
+                    except BaseException:
                         pass
 
             self.is_next_page = self._get_cursor(entries)
@@ -64,9 +82,9 @@ class UserTweets(dict):
             for tweet in _tweets:
                 self.tweets.append(tweet)
 
-            self['tweets'] = self.tweets
-            self['is_next_page'] = self.is_next_page
-            self['cursor'] = self.cursor
+            self["tweets"] = self.tweets
+            self["is_next_page"] = self.is_next_page
+            self["cursor"] = self.cursor
 
         return self, _tweets
 
@@ -81,9 +99,9 @@ class UserTweets(dict):
 
     def _get_cursor(self, entries):
         for entry in entries:
-            if str(entry['entryId']).split("-")[0] == "cursor":
-                if entry['content']['cursorType'] == "Bottom":
-                    newCursor = entry['content']['value']
+            if str(entry["entryId"]).split("-")[0] == "cursor":
+                if entry["content"]["cursorType"] == "Bottom":
+                    newCursor = entry["content"]["value"]
 
                     if newCursor == self.cursor:
                         return False
@@ -112,5 +130,3 @@ class UserTweets(dict):
     @deprecated
     def to_dict(self):
         return self.tweets
-
-

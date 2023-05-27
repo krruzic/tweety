@@ -1,34 +1,37 @@
 import os
+from typing import Any, Optional, Union
+
 import httpx as s
 from tqdm import tqdm
 
-from .exceptions_ import (
+from tweety.types.search import SearchFilter
+
+from .builder import UrlBuilder
+from .exceptions import (
     GuestTokenNotFound,
+    InvalidCredentials,
     UnknownError,
     UserNotFound,
-    InvalidCredentials,
 )
 from .types.n_types import GenericError
-from .utils import custom_json
-from .builder import UrlBuilder
-
-s.Response.json_ = custom_json
 
 
 class Request:
-    def __init__(self, max_retries=10, proxy=None, cookies=None):
-        self.username = None
-        self.__is_client = True if cookies else False
-        self.__session = s.Client(
-            proxies=proxy, cookies=self._parse_cookies(cookies), timeout=60
-        )
+    def __init__(
+        self,
+        max_retries: int = 10,
+        proxy: Optional[Any] = None,
+    ):
+        self.__session = s.Client(proxies=proxy, timeout=60)
         self.__builder = UrlBuilder(self.__session.cookies)
         self.__guest_token = self._get_guest_token(max_retries)
-        self._verify_cookies()
 
-    def __get_response__(self, **request_data):
+    def __get_response__(self, **request_data) -> Any:
         response = self.__session.request(**request_data)
-        response_json = response.json_()  # noqa
+        try:
+            response_json = response.json()
+        except BaseException:
+            response_json = None
 
         if not response_json:
             raise UnknownError(
@@ -40,45 +43,13 @@ class Request:
 
         if response_json.get("errors") and not response_json.get("data"):
             error = response_json["errors"][0]
-            return GenericError(response, error.get("code"), error.get("message"))
+            return GenericError(
+                response, error.get("code"), error.get("message")
+            )._raise_exception()
 
         return response_json
 
-    @staticmethod
-    def _parse_cookies(cookies):
-        if not cookies:
-            return None
-
-        true_cookies = dict()
-        if isinstance(cookies, str):
-            cookie_list = cookies.split(";")
-            for cookie in cookie_list:
-                split_cookie = cookie.strip().split("=")
-
-                if len(split_cookie) >= 2:
-                    cookie_key = split_cookie[0]
-                    cookie_value = split_cookie[1]
-                    true_cookies[cookie_key] = cookie_value
-        elif isinstance(cookies, dict):
-            true_cookies = cookies
-        else:
-            raise TypeError(
-                "cookies should be of class 'str' or 'dict' not {}".format(
-                    cookies.__class__
-                )
-            )
-
-        if not true_cookies.get("ct0"):
-            raise InvalidCredentials(
-                None, None, None, "'ct0' key in cookies isn't available"
-            )
-
-        return true_cookies
-
-    def _get_guest_token(self, max_retries=10):
-        if self.__is_client:
-            return
-
+    def _get_guest_token(self, max_retries: int = 10):
         for retry in range(max_retries):
             response = self.__get_response__(**self.__builder.get_guest_token())
 
@@ -89,7 +60,7 @@ class Request:
             None,
             None,
             None,
-            f"Guest Token couldn't be found after {max_retries} retires.",
+            f"Guest Token couldn't be found after {max_retries} retries.",
         )
 
     def _init_api(self):
@@ -97,25 +68,7 @@ class Request:
         data["json"] = {}
         self.__get_response__(**data)
 
-    def _verify_cookies(self):
-        if not self.__is_client:
-            return
-
-        data = self.__builder.aUser_settings()
-        response = self.__get_response__(**data)
-
-        if not response.get("screen_name"):
-            raise InvalidCredentials(None, None, None)
-
-        self.username = response.get("screen_name")
-
-    def get_user(self, username=None):
-        if not username:
-            if not self.username:
-                raise ValueError("'username' is required")
-
-            username = self.username
-
+    def get_user(self, username: str):
         response = self.__get_response__(**self.__builder.user_by_screen_name(username))
 
         if response.get("data"):  # noqa
@@ -125,7 +78,9 @@ class Request:
             error_code=50, error_name="GenericUserNotFound", response=response
         )
 
-    def get_tweets(self, user_id, replies=False, cursor=None):
+    def get_tweets(
+        self, user_id: int, replies: bool = False, cursor: Optional[str] = None
+    ):
         request_data = self.__builder.user_tweets(
             user_id=user_id, replies=replies, cursor=cursor
         )
@@ -136,16 +91,21 @@ class Request:
         response = self.__get_response__(**self.__builder.trends())
         return response
 
-    def perform_search(self, query, cursor, search_type):
-        request_data = self.__builder.search(query, search_type, cursor)
-        response = self.__get_response__(**request_data)
+    def perform_search(
+        self, query: str, cursor: Optional[str], search_type: SearchFilter = "Latest"
+    ):
+        response = self.__get_response__(
+            **self.__builder.search(query, search_type, cursor)
+        )
         return response
 
-    def get_tweet_detail(self, tweetId):
-        response = self.__get_response__(**self.__builder.tweet_detail(tweetId))
+    def get_tweet_detail(self, tweet_id: int):
+        response = self.__get_response__(**self.__builder.tweet_detail(tweet_id))
         return response
 
-    def download_media(self, media_url, filename=None, show_progress=True):
+    def download_media(
+        self, media_url: str, filename: Optional[str] = None, show_progress: bool = True
+    ):
         filename = (
             os.path.basename(media_url).split("?")[0] if not filename else filename
         )

@@ -2,12 +2,12 @@ import functools
 import re
 from typing import Literal, Optional, Union
 
-from .types.n_types import Proxy
-from .exceptions_ import *
+from .exceptions import *
 from .http import Request
-from .types.usertweet import UserTweets
+from .types.n_types import Proxy
 from .types.search import Search
-from .types.twDataTypes import User, Trends, Tweet
+from .types.twDataTypes import Trends, Tweet, User
+from .types.usertweet import UserTweets
 
 
 def AuthRequired(f):
@@ -25,23 +25,20 @@ class Twitter:
     def __init__(
         self,
         max_retries: int = 10,
-        proxy: Union[dict, Proxy] = None,
-        cookies: Union[str, dict] = None,
+        proxy: Optional[Union[dict, Proxy]] = None,
     ):
         """
         Constructor of the Twitter Public class
 
         :param max_retries: (`int`) Number of retries the script would make , if the guest token wasn't found
         :param proxy: (`dict` or `Proxy`) Provide the proxy you want to use while making a request
-        :param cookies: (`str` or `dict`) Cookies which will be used for user authentication
         """
 
-        self.request = Request(max_retries=max_retries, proxy=proxy, cookies=cookies)
-        self.user = self.get_user_info() if cookies is not None else None
+        self.request = Request(max_retries=max_retries, proxy=proxy)
 
     def get_user_info(
         self,
-        username: str = None,
+        username: str,
         banner_extensions: bool = False,
         image_extensions: bool = False,
     ):
@@ -75,17 +72,10 @@ class Twitter:
 
         return User(user_raw["data"]["user"]["result"])
 
-    @property
-    def user_id(self):
-        """
-        Get the user unique twitter id
-
-        :return: int
-        """
-
-        return self.user.rest_id if self.user else None
-
-    def _get_user_id(self, username):
+    def _get_user_id(
+        self,
+        username: Union[str, int, User],
+    ):
         if isinstance(username, User):
             user_id = username.rest_id
         elif isinstance(username, int):
@@ -103,7 +93,7 @@ class Twitter:
         pages: int = 1,
         replies: bool = False,
         wait_time: int = 2,
-        cursor: str = None,
+        cursor: Optional[str] = None,
     ):
         """
          Get the tweets from a user
@@ -112,7 +102,8 @@ class Twitter:
         :param: pages: (`int`) number of pages to be scraped
         :param: replies: (`boolean`) get the replied tweets of the user too
         :param: wait_time: (`int`) seconds to wait between multiple requests
-        :param: cursor: Pagination cursor if you want to get the pages from that cursor up-to (This cursor is different from actual API cursor)
+        :param: cursor: Pagination cursor if you want to get the pages
+                        from that cursor up-to (This cursor is different from actual API cursor)
 
         :return: .types.usertweet.UserTweets
         """
@@ -136,7 +127,7 @@ class Twitter:
         pages: int = 1,
         replies: bool = False,
         wait_time: int = 2,
-        cursor: str = None,
+        cursor: Optional[str] = None,
     ):
         """
          Generator for getting the tweets from a user
@@ -182,7 +173,7 @@ class Twitter:
                     data["tweet_count"] = i["item"]["content"]["trend"][
                         "trendMetadata"
                     ]["metaDescription"]
-            except:
+            except BaseException:
                 pass
             trends.append(Trends(data))
         return trends
@@ -208,7 +199,6 @@ class Twitter:
         :return: list[.types.twDataTypes.Tweet]
         """
         response = self.request.perform_search(query, cursor, search_type)
-        # print(response)
         tweets = []
         for i in response["data"]["search_by_raw_query"]["search_timeline"]["timeline"][
             "instructions"
@@ -228,9 +218,9 @@ class Twitter:
         :return: .types.twDataTypes.Tweet
         """
 
-        tweetId = re.findall("\d+", identifier)[0]
+        tweet_id = re.findall(r"\d+", identifier)[0]
 
-        r = self.request.get_tweet_detail(tweetId)
+        r = self.request.get_tweet_detail(tweet_id)
 
         try:
             for entry in r["data"]["threaded_conversation_with_injections_v2"][
@@ -241,7 +231,7 @@ class Twitter:
                         "result"
                     ]
 
-                    if raw_tweet["rest_id"] == str(tweetId):
+                    if raw_tweet["rest_id"] == str(tweet_id):
                         return Tweet(r, raw_tweet, self.request, True, False, True)
 
         except KeyError:

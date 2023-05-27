@@ -36,43 +36,41 @@ root = os.path.abspath(os.path.join(__file__, os.path.pardir, os.path.pardir))
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    'sphinx.ext.autodoc',
-    'sphinx.ext.autosummary',
-    'sphinx.ext.intersphinx',
-    'sphinx.ext.autosectionlabel'
+    "sphinx.ext.autodoc",
+    "sphinx.ext.autosummary",
+    "sphinx.ext.intersphinx",
+    "sphinx.ext.autosectionlabel",
 ]
 autosectionlabel_prefix_document = True
 autosectionlabel_maxdepth = 3
-intersphinx_mapping = {
-    'python': ('https://docs.python.org/3', None)
-}
+intersphinx_mapping = {"python": ("https://docs.python.org/3", None)}
 
 # Change the default role so we can avoid prefixing everything with :obj:
 default_role = "py:obj"
 
 # Add any paths that contain templates here, relative to this directory.
-templates_path = ['_templates']
+templates_path = ["_templates"]
 
 # The suffix(es) of source filenames.
 # You can specify multiple suffix as a list of string:
 #
 # source_suffix = ['.rst', '.md']
-source_suffix = '.rst'
+source_suffix = ".rst"
 
 # The master toctree document.
-master_doc = 'index'
+master_doc = "index"
 
 # General information about the project.
-project = 'Tweety'
-copyright = '2022 - 2023, mahrtayyab'
-author = 'mahrtayyab'
+project = "Tweety"
+copyright = "2022 - 2023, mahrtayyab"
+author = "mahrtayyab"
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
 # built documents.
 #
 # The short X.Y version.
-with open(os.path.join(root, 'src', 'tweety', '__init__.py'), 'r') as f:
+with open(os.path.join(root, "src", "tweety", "__init__.py"), "r") as f:
     version = re.search('__version__ = "(.*?)"', f.read(), flags=re.IGNORECASE).group(1)
 
 # The full version, including alpha/beta/rc tags.
@@ -83,29 +81,29 @@ release = version
 #
 # This is also used if you do content translation via gettext catalogs.
 # Usually you set "language" from the command line for these cases.
-language = 'en'
+language = "en"
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This patterns also effect to html_static_path and html_extra_path
-exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
+exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 
 # The name of the Pygments (syntax highlighting) style to use.
-pygments_style = 'friendly'
+pygments_style = "friendly"
 
 # If true, `todo` and `todoList` produce output, else they produce nothing.
 todo_include_todos = False
 
 
 def skip(app, what, name, obj, would_skip, options):
-    if name.endswith('__'):
+    if name.endswith("__"):
         # We want to show special methods names, except some which add clutter
         return name in {
-            '__init__',
-            '__abstractmethods__',
-            '__module__',
-            '__doc__',
-            '__dict__'
+            "__init__",
+            "__abstractmethods__",
+            "__module__",
+            "__doc__",
+            "__dict__",
         }
 
     return would_skip
@@ -113,9 +111,12 @@ def skip(app, what, name, obj, would_skip, options):
 
 def setup(app):
     app.connect("autodoc-skip-member", skip)
-    app.add_object_type('confval', 'confval',
-                        objname='configuration value',
-                        indextemplate='pair: %s; configuration value')
+    app.add_object_type(
+        "confval",
+        "confval",
+        objname="configuration value",
+        indextemplate="pair: %s; configuration value",
+    )
 
 
 # -- Options for HTML output ----------------------------------------------
@@ -123,16 +124,16 @@ def setup(app):
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = 'sphinx_rtd_theme'
+html_theme = "sphinx_rtd_theme"
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
 #
 html_theme_options = {
-    'collapse_navigation': True,
-    'display_version': True,
-    'navigation_depth': 2,
+    "collapse_navigation": True,
+    "display_version": True,
+    "navigation_depth": 2,
 }
 
 # Add any paths that contain custom static files (such as style sheets) here,
@@ -146,10 +147,10 @@ html_theme_options = {
 # This is required for the alabaster theme
 # refs: http://alabaster.readthedocs.io/en/latest/installation.html#sidebars
 html_sidebars = {
-    '**': [
-        'globaltoc.html',
-        'relations.html',  # needs 'show_related': True theme option to display
-        'searchbox.html',
+    "**": [
+        "globaltoc.html",
+        "relations.html",  # needs 'show_related': True theme option to display
+        "searchbox.html",
     ]
 }
 
@@ -157,7 +158,7 @@ html_sidebars = {
 # -- Options for HTMLHelp output ------------------------------------------
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'Tweetydoc'
+htmlhelp_basename = "Tweetydoc"
 
 
 # -- Options for LaTeX output ---------------------------------------------
@@ -166,15 +167,12 @@ latex_elements = {
     # The paper size ('letterpaper' or 'a4paper').
     #
     # 'papersize': 'letterpaper',
-
     # The font size ('10pt', '11pt' or '12pt').
     #
     # 'pointsize': '10pt',
-
     # Additional stuff for the LaTeX preamble.
     #
     # 'preamble': '',
-
     # Latex figure (float) alignment
     #
     # 'figure_align': 'htbp',
@@ -184,8 +182,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'Tweety.tex', 'Tweety Documentation',
-     author, 'manual'),
+    (master_doc, "Tweety.tex", "Tweety Documentation", author, "manual"),
 ]
 
 
@@ -193,10 +190,7 @@ latex_documents = [
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-man_pages = [
-    (master_doc, 'tweety', 'Tweety Documentation',
-     [author], 1)
-]
+man_pages = [(master_doc, "tweety", "Tweety Documentation", [author], 1)]
 
 
 # -- Options for Texinfo output -------------------------------------------
@@ -205,7 +199,13 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'Tweety', 'Tweety Documentation',
-     author, 'Tweety', 'One line description of project.',
-     'Miscellaneous'),
+    (
+        master_doc,
+        "Tweety",
+        "Tweety Documentation",
+        author,
+        "Tweety",
+        "One line description of project.",
+        "Miscellaneous",
+    ),
 ]

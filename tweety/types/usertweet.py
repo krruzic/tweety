@@ -1,5 +1,5 @@
 import time
-from typing import Optional
+from typing import List, Optional
 
 from ..exceptions import UserNotFound, UserProtected
 from . import Excel, Tweet, deprecated
@@ -27,7 +27,7 @@ class UserTweets(dict):
         # self._get_tweets(pages, wait_time)
 
     @staticmethod
-    def _get_entries(response):
+    def _get_entries(response: dict) -> List[dict]:
         instructions = response["data"]["user"]["result"]["timeline_v2"]["timeline"][
             "instructions"
         ]
@@ -38,7 +38,7 @@ class UserTweets(dict):
         return []
 
     @staticmethod
-    def _get_tweet_content_key(tweet):
+    def _get_tweet_content_key(tweet: dict) -> List[dict]:
         if str(tweet["entryId"]).split("-")[0] == "tweet":
             return [tweet["content"]["itemContent"]["tweet_results"]["result"]]
 
@@ -97,7 +97,7 @@ class UserTweets(dict):
             if self.is_next_page and page != self.pages:
                 time.sleep(self.wait_time)
 
-    def _get_cursor(self, entries):
+    def _get_cursor(self, entries: List[dict]) -> bool:
         for entry in entries:
             if str(entry["entryId"]).split("-")[0] == "cursor":
                 if entry["content"]["cursorType"] == "Bottom":
@@ -111,10 +111,10 @@ class UserTweets(dict):
 
         return False
 
-    def to_xlsx(self, filename=None):
-        return Excel(self.tweets, self.tweets[0].author, filename)
+    def to_xlsx(self):
+        return Excel(self.tweets, self.tweets[0].author)
 
-    def __getitem__(self, index):
+    def __getitem__(self, index: int) -> Tweet:
         return self.tweets[index]
 
     def __iter__(self):

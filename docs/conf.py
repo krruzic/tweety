@@ -25,7 +25,7 @@ sys.path.insert(0, os.path.abspath(os.curdir))
 sys.path.insert(0, os.path.abspath(os.pardir))
 
 root = os.path.abspath(os.path.join(__file__, os.path.pardir, os.path.pardir))
-
+print(sys.path)
 # -- General configuration ------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
@@ -62,15 +62,15 @@ master_doc = "index"
 
 # General information about the project.
 project = "Tweety"
-copyright = "2022 - 2023, mahrtayyab"
-author = "mahrtayyab"
+copyright = "mahrtayyab - (2022-2023), Kristopher Ruzic - (2023)"
+author = "mahrtayyab, Kristopher Ruzic"
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
 # built documents.
 #
 # The short X.Y version.
-with open(os.path.join(root, "src", "tweety", "__init__.py"), "r") as f:
+with open(os.path.join(root, "tweety", "__init__.py"), "r") as f:
     version = re.search('__version__ = "(.*?)"', f.read(), flags=re.IGNORECASE).group(1)
 
 # The full version, including alpha/beta/rc tags.
@@ -205,7 +205,7 @@ texinfo_documents = [
         "Tweety Documentation",
         author,
         "Tweety",
-        "One line description of project.",
+        "GraphQL Implementation of the Twitter API",
         "Miscellaneous",
     ),
 ]

@@ -4,9 +4,8 @@ import re
 import sys
 import warnings
 
-import dateutil
+import dateutil.parser
 import openpyxl
-from dateutil import parser
 
 WORKBOOK_HEADERS = [
     "Created on",
@@ -53,21 +52,10 @@ def deprecated(func):
     return new_func
 
 
-def bar_progress(current, total, width=80):
-    progress_message = "Downloading: %d%% [%d / %d] bytes" % (
-        current / total * 100,
-        current,
-        total,
-    )
-    sys.stdout.write("\r" + progress_message)
-    sys.stdout.flush()
-
-
 class Excel:
-    def __init__(self, tweets, user, filename=None):
+    def __init__(self, tweets: list, filename: str):
         self.tweets = tweets
-        self.user = user
-        self.filename = filename
+        self.filename = f"tweets-{filename}.xlsx"
         self.workbook = openpyxl.Workbook()
         self.worksheet = self.workbook.create_sheet("tweets")
         self._set_headers()
@@ -80,7 +68,7 @@ class Excel:
 
     def _write_data(self):
         for tweet in self.tweets:
-            self.worksheet[f"A{self.max_row  + 1}"] = tweet.date
+            self.worksheet[f"A{self.max_row  + 1}"] = tweet.date.replace(tzinfo=None)
             self.worksheet[f"B{self.max_row  + 1}"] = tweet.author.name
             self.worksheet[f"C{self.max_row  + 1}"] = tweet.is_retweet
             self.worksheet[f"D{self.max_row  + 1}"] = tweet.is_reply
@@ -117,11 +105,9 @@ class Excel:
             )
             self.max_row += 1
 
-        if not self.filename:
-            self.filename = f"tweets-{self.user.screen_name}.xlsx"
-
+        # remove the default Sheet
         try:
-            self.workbook.remove("sheet")
+            self.workbook.remove(self.workbook.get_sheet_by_name("Sheet"))
         except ValueError:
             pass
 
@@ -236,7 +222,7 @@ class Tweet(dict):
 
     def _get_threads(self):
         if not self.__raw_response:
-            self.__raw_response = self.http.get_tweet_detail(self.id)  # noqa
+            self.__raw_response = self.http.get_tweet_detail(self.id)
 
         for entry in self.__raw_response["data"][
             "threaded_conversation_with_injections_v2"
@@ -651,10 +637,12 @@ class Card(dict):
                 }
                 self.choices.append(Choice(_r))
             elif _key[0] == "end" and _key[1] == "datetime":
-                self.end_time = parser.parse(_["value"]["string_value"])
+                self.end_time = dateutil.parser.parse(_["value"]["string_value"])
                 # last_updated_datetime_utc
             elif _key[0] == "last" and _key[1] == "updated":
-                self.last_updated_time = parser.parse(_["value"]["string_value"])
+                self.last_updated_time = dateutil.parser.parse(
+                    _["value"]["string_value"]
+                )
                 # duration_minutes
             elif _key[0] == "duration" and _key[1] == "minutes":
                 self.duration = _["value"]["string_value"]
@@ -791,18 +779,18 @@ class User(dict):
         if not date and self._json.get("created_at"):
             date = self._json["created_at"]
 
-        return parser.parse(date) if date else None
+        return dateutil.parser.parse(date) if date else None
 
     def _get_key(self, key, default=None):
         user = self._json
-        keyValue = default
+        key_value = default
         if user.get("legacy"):
-            keyValue = user["legacy"].get(key)
+            key_value = user["legacy"].get(key)
 
-        if not keyValue and user.get(key):
-            keyValue = user[key]
+        if not key_value and user.get(key):
+            key_value = user[key]
 
-        if str(keyValue).isdigit():
-            keyValue = int(keyValue)
+        if key_value and str(key_value).isdigit():
+            key_value = int(key_value)
 
-        return keyValue
+        return key_value

@@ -1,5 +1,5 @@
 ========================
-Tweety's Documentation
+Tweety Documentation
 ========================
 
 .. code-block:: python
@@ -55,7 +55,6 @@ You can also use the menu on the left to quickly skip over sections.
     basic/all-functions
     basic/twDataTypes
     basic/exceptions
-    basic/filter
 
 .. toctree::
     :hidden:

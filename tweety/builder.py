@@ -2,10 +2,10 @@ import json
 import random
 import string
 from functools import wraps
-from typing import Any, Callable, Dict, Literal, Optional, Tuple
+from typing import Any, Callable, Dict, Optional, Tuple
 from urllib.parse import urlencode
 
-from tweety.types.search import SearchFilter
+from tweety.types.n_types import SearchFilter
 
 REQUEST_USER_AGENT = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36"
 REQUEST_PLATFORMS = ["Linux", "Windows"]

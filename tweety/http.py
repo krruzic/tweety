@@ -1,22 +1,15 @@
 import os
-from typing import Any, Optional, Union
+from typing import Any, Optional
 
 import httpx as s
 from tqdm import tqdm
 
-from tweety.types.search import SearchFilter
-
 from .builder import UrlBuilder
-from .exceptions import (
-    GuestTokenNotFound,
-    InvalidCredentials,
-    UnknownError,
-    UserNotFound,
-)
-from .types.n_types import GenericError
+from .exceptions import GuestTokenNotFound, UnknownError, UserNotFound
+from .types.n_types import GenericError, SearchFilter
 
 
-class Request:
+class RequestMaker:
     def __init__(
         self,
         max_retries: int = 10,
@@ -91,11 +84,14 @@ class Request:
         response = self.__get_response__(**self.__builder.trends())
         return response
 
-    def perform_search(
-        self, query: str, cursor: Optional[str], search_type: SearchFilter = "Latest"
+    def get_search_tweets(
+        self,
+        query: str,
+        search_filter: SearchFilter = "Latest",
+        cursor: Optional[str] = None,
     ):
         response = self.__get_response__(
-            **self.__builder.search(query, search_type, cursor)
+            **self.__builder.search(query, search_filter, cursor)
         )
         return response
 

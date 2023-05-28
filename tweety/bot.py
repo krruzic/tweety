@@ -2,10 +2,11 @@ import functools
 import re
 from typing import Literal, Optional, Union
 
+from tweety.types.searchtweet import SearchTweets
+
 from .exceptions import *
-from .http import Request
+from .http import RequestMaker
 from .types.n_types import Proxy
-from .types.search import Search
 from .types.twDataTypes import Trends, Tweet, User
 from .types.usertweet import UserTweets
 
@@ -34,7 +35,7 @@ class Twitter:
         :param proxy: (`dict` or `Proxy`) Provide the proxy you want to use while making a request
         """
 
-        self.request = Request(max_retries=max_retries, proxy=proxy)
+        self.request = RequestMaker(max_retries=max_retries, proxy=proxy)
 
     def get_user_info(
         self,
@@ -112,14 +113,14 @@ class Twitter:
 
         user_id = self._get_user_id(username)
 
-        userTweets = UserTweets(
+        user_tweets = UserTweets(
             user_id, self.request, pages, replies, wait_time, cursor
         )
 
         # TODO : Find proper way to run the generator
-        results = [i for i in userTweets.generator()]
+        results = [i for i in user_tweets.generator()]
 
-        return userTweets
+        return user_tweets
 
     def iter_tweets(
         self,
@@ -140,16 +141,14 @@ class Twitter:
 
         :return: (.types.usertweet.UserTweets, list[.types.twDataTypes.Tweet])
         """
-        if wait_time is None:
-            wait_time = 0
 
         user_id = self._get_user_id(username)
 
-        userTweets = UserTweets(
+        user_tweets = UserTweets(
             user_id, self.request, pages, replies, wait_time, cursor
         )
 
-        return userTweets.generator()
+        return user_tweets.generator()
 
     def get_trends(self):
         """
@@ -181,8 +180,8 @@ class Twitter:
     def search(
         self,
         query: str,
+        search_filter: Literal["Latest", "users", "photos", "videos"] = "Latest",
         pages: int = 1,
-        search_type: Literal["Latest", "users", "photos", "videos"] = "Latest",
         wait_time: int = 2,
         cursor: Optional[str] = None,
     ):
@@ -191,23 +190,49 @@ class Twitter:
 
         :param query: (`str`) The keyword which is supposed to be searched
         :param pages: (`int`) The number of pages to get
-        :param search_type: (`str`) The type of search to perform (Latest,user,photos,videos)
+        :param search_filter: (`str`) The type of search to perform (Latest,user,photos,videos)
+        :param wait_time : (`int`) seconds to wait between multiple requests
+        :param cursor: (`str`) Pagination cursor if you want to get the pages from that cursor up-to (This cursor is different from actual API cursor)
+
+
+        :return: (.types.searchtweet.SearchTweet, list[.types.twDataTypes.Tweet])
+        """
+
+        search_tweets = SearchTweets(
+            query, search_filter, self.request, pages, wait_time, cursor
+        )
+
+        # TODO : Find proper way to run the generator
+        results = [i for i in search_tweets.generator()]
+
+        return search_tweets
+
+    def iter_search(
+        self,
+        query: str,
+        search_filter: Literal["Latest", "users", "photos", "videos"] = "Latest",
+        pages: int = 1,
+        wait_time: int = 2,
+        cursor: Optional[str] = None,
+    ):
+        """
+        Search for a keyword or hashtag on Twitter
+
+        :param query: (`str`) The keyword which is supposed to be searched
+        :param pages: (`int`) The number of pages to get
+        :param search_filter: (`str`) The type of search to perform (Latest,user,photos,videos)
         :param wait_time : (`int`) seconds to wait between multiple requests
         :param cursor: (`str`) Pagination cursor if you want to get the pages from that cursor up-to (This cursor is different from actual API cursor)
 
 
         :return: list[.types.twDataTypes.Tweet]
         """
-        response = self.request.perform_search(query, cursor, search_type)
-        tweets = []
-        for i in response["data"]["search_by_raw_query"]["search_timeline"]["timeline"][
-            "instructions"
-        ][0]["entries"]:
-            if "itemContent" not in i["content"]:
-                continue
-            tweet_data = i["content"]["itemContent"]["tweet_results"]["result"]
-            tweets.append(Tweet(response, tweet_data, self.request))
-        return tweets
+
+        search_tweets = SearchTweets(
+            query, search_filter, self.request, pages, wait_time, cursor
+        )
+
+        return search_tweets.generator()
 
     def tweet_detail(self, identifier: str):
         """

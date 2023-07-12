@@ -30,21 +30,20 @@ class SearchTweets(dict):
 
     @staticmethod
     def _get_entries(response: dict) -> List[dict]:
-        instructions = response["data"]["search_by_raw_query"]["search_timeline"][
-            "timeline"
-        ]["instructions"]
-        for instruction in instructions:
-            if instruction.get("type") == "TimelineAddEntries":
-                return instruction["entries"]
-
-        return []
+        try:
+            instructions = response["status"]["search_by_raw_query"]["search_timeline"][
+                "timeline"
+            ]["instructions"]
+            for instruction in instructions:
+                if instruction.get("type") == "TimelineAddEntries":
+                    return instruction["entries"]
+        except KeyError:
+            pass
+        return response["statuses"]
 
     @staticmethod
     def _get_tweet_content_key(tweet: dict):
-        if str(tweet["entryId"]).split("-")[0] == "tweet":
-            return [tweet["content"]["itemContent"]["tweet_results"]["result"]]
-
-        return []
+        return [tweet]
 
     def get_next_page(self):
         _tweets = []
@@ -52,9 +51,6 @@ class SearchTweets(dict):
             response = self.http.get_search_tweets(
                 self.query, search_filter=self.search_filter, cursor=self.cursor
             )
-            # TODO: validate results
-            # check response has a body or something?
-
             entries = self._get_entries(response)
 
             for entry in entries:
@@ -67,7 +63,7 @@ class SearchTweets(dict):
                     except BaseException:
                         pass
 
-            self.is_next_page = self._get_cursor(entries)
+            self.is_next_page = self._get_cursor(response)
 
             for tweet in _tweets:
                 self.tweets.append(tweet)
@@ -75,30 +71,35 @@ class SearchTweets(dict):
             self["tweets"] = self.tweets
             self["is_next_page"] = self.is_next_page
             self["cursor"] = self.cursor
-
         return self, _tweets
 
     def generator(self):
+        tweets = []
         for page in range(1, int(self.pages) + 1):
-            _, tweets = self.get_next_page()
-
-            yield self, tweets
+            _, new_tweets = self.get_next_page()
+            tweets = tweets + new_tweets
 
             if self.is_next_page and page != self.pages:
                 time.sleep(self.wait_time)
+        yield self, tweets
 
-    def _get_cursor(self, entries: List[dict]) -> bool:
-        for entry in entries:
-            if str(entry["entryId"]).split("-")[0] == "cursor":
-                if entry["content"]["cursorType"] == "Bottom":
-                    new_cursor = entry["content"]["value"]
-                    if new_cursor == self.cursor:
-                        return False
-
-                    self.cursor = new_cursor
-                    return True
-
-        return False
+    def _get_cursor(self, response: dict) -> bool:
+        try:
+            maybe_cursor = response["search_metadata"]["max_id"]
+            if maybe_cursor != 0:
+                new_cursor = str(maybe_cursor)
+            else:
+                new_cursor = (
+                    response["search_metadata"]["next_results"]
+                    .split("=")[1]
+                    .split("&q")[0]
+                )
+            if new_cursor == self.cursor:
+                return False
+            self.cursor = new_cursor
+            return True
+        except KeyError:
+            return False
 
     def to_xlsx(self):
         return Excel(self.tweets, urllib.parse.quote(self.query))

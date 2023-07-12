@@ -6,7 +6,7 @@ from tweety.types.searchtweet import SearchTweets
 
 from .exceptions import *
 from .http import RequestMaker
-from .types.n_types import Proxy
+from .types.n_types import Proxy, SearchFilter
 from .types.twDataTypes import Trends, Tweet, User
 from .types.usertweet import UserTweets
 
@@ -57,7 +57,7 @@ class Twitter:
 
         if not banner_extensions or banner_extensions is False:
             try:
-                del user_raw["data"]["user"]["result"]["legacy"][
+                del user_raw["data"]["user_result"]["result"]["legacy"][
                     "profile_banner_extensions"
                 ]
             except KeyError:
@@ -65,13 +65,13 @@ class Twitter:
 
         if not image_extensions or image_extensions is False:
             try:
-                del user_raw["data"]["user"]["result"]["legacy"][
+                del user_raw["data"]["user_result"]["result"]["legacy"][
                     "profile_image_extensions"
                 ]
             except KeyError:
                 pass
 
-        return User(user_raw["data"]["user"]["result"])
+        return User(user_raw["data"]["user_result"]["result"])
 
     def _get_user_id(
         self,
@@ -180,7 +180,7 @@ class Twitter:
     def search(
         self,
         query: str,
-        search_filter: Literal["Latest", "users", "photos", "videos"] = "Latest",
+        search_filter: SearchFilter = "live",
         pages: int = 1,
         wait_time: int = 2,
         cursor: Optional[str] = None,
@@ -190,7 +190,7 @@ class Twitter:
 
         :param query: (`str`) The keyword which is supposed to be searched
         :param pages: (`int`) The number of pages to get
-        :param search_filter: (`str`) The type of search to perform (Latest,user,photos,videos)
+        :param search_filter: (`str`) The type of search to perform (live,user,photos,videos)
         :param wait_time : (`int`) seconds to wait between multiple requests
         :param cursor: (`str`) Pagination cursor if you want to get the pages from that cursor up-to (This cursor is different from actual API cursor)
 
@@ -210,7 +210,7 @@ class Twitter:
     def iter_search(
         self,
         query: str,
-        search_filter: Literal["Latest", "users", "photos", "videos"] = "Latest",
+        search_filter: SearchFilter = "live",
         pages: int = 1,
         wait_time: int = 2,
         cursor: Optional[str] = None,
@@ -248,13 +248,9 @@ class Twitter:
         r = self.request.get_tweet_detail(tweet_id)
 
         try:
-            for entry in r["data"]["threaded_conversation_with_injections_v2"][
-                "instructions"
-            ][0]["entries"]:
+            for entry in r["data"]["timeline_response"]["instructions"][0]["entries"]:
                 if str(entry["entryId"]).split("-")[0] == "tweet":
-                    raw_tweet = entry["content"]["itemContent"]["tweet_results"][
-                        "result"
-                    ]
+                    raw_tweet = entry["content"]["content"]["tweetResult"]["result"]
 
                     if raw_tweet["rest_id"] == str(tweet_id):
                         return Tweet(r, raw_tweet, self.request, True, False, True)

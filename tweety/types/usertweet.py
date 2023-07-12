@@ -28,11 +28,11 @@ class UserTweets(dict):
 
     @staticmethod
     def _get_entries(response: dict) -> List[dict]:
-        instructions = response["data"]["user"]["result"]["timeline_v2"]["timeline"][
-            "instructions"
-        ]
+        instructions = response["data"]["user_result"]["result"]["timeline_response"][
+            "timeline"
+        ]["instructions"]
         for instruction in instructions:
-            if instruction.get("type") == "TimelineAddEntries":
+            if instruction.get("__typename") == "TimelineAddEntries":
                 return instruction["entries"]
 
         return []
@@ -40,11 +40,11 @@ class UserTweets(dict):
     @staticmethod
     def _get_tweet_content_key(tweet: dict) -> List[dict]:
         if str(tweet["entryId"]).split("-")[0] == "tweet":
-            return [tweet["content"]["itemContent"]["tweet_results"]["result"]]
+            return [tweet["content"]["content"]["tweetResult"]["result"]]
 
         if str(tweet["entryId"]).split("-")[0] == "homeConversation":
             return [
-                item["item"]["itemContent"]["tweet_results"]["result"]
+                item["item"]["content"]["tweetResult"]["result"]
                 for item in tweet["content"]["items"]
             ]
 
@@ -57,13 +57,16 @@ class UserTweets(dict):
                 self.user_id, replies=self.get_replies, cursor=self.cursor
             )
 
-            if not response["data"]["user"].get("result"):
+            if not response["data"]["user_result"].get("result"):
                 raise UserNotFound(
                     error_code=50, error_name="GenericUserNotFound", response=response
                 )
 
-            if response["data"]["user"]["result"]["__typename"] == "UserUnavailable":
-                raise UserProtected(403, "UserUnavailable", None)
+            # if (
+            #     response["data"]["user_result"]["result"]["__typename"]
+            #     == "UserUnavailable"
+            # ):
+            #     raise UserProtected(403, "UserUnavailable", None)
 
             entries = self._get_entries(response)
 
@@ -89,24 +92,26 @@ class UserTweets(dict):
         return self, _tweets
 
     def generator(self):
+        tweets = []
         for page in range(1, int(self.pages) + 1):
-            _, tweets = self.get_next_page()
-
-            yield self, tweets
+            _, new_tweets = self.get_next_page()
+            tweets = tweets + new_tweets
 
             if self.is_next_page and page != self.pages:
                 time.sleep(self.wait_time)
+
+        yield self, tweets
 
     def _get_cursor(self, entries: List[dict]) -> bool:
         for entry in entries:
             if str(entry["entryId"]).split("-")[0] == "cursor":
                 if entry["content"]["cursorType"] == "Bottom":
-                    newCursor = entry["content"]["value"]
+                    new_cursor = entry["content"]["value"]
 
-                    if newCursor == self.cursor:
+                    if new_cursor == self.cursor:
                         return False
 
-                    self.cursor = newCursor
+                    self.cursor = new_cursor
                     return True
 
         return False

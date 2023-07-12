@@ -17,7 +17,7 @@ class RequestMaker:
     ):
         self.__session = s.Client(proxies=proxy, timeout=60)
         self.__builder = UrlBuilder(self.__session.cookies)
-        self.__guest_token = self._get_guest_token(max_retries)
+        self.__builder.guest_token = self._get_guest_token(max_retries)
 
     def __get_response__(self, **request_data) -> Any:
         response = self.__session.request(**request_data)
@@ -43,11 +43,9 @@ class RequestMaker:
         return response_json
 
     def _get_guest_token(self, max_retries: int = 10):
-        for retry in range(max_retries):
+        for _ in range(max_retries):
             response = self.__get_response__(**self.__builder.get_guest_token())
-
-            token = self.__builder.guest_token = response["guest_token"]  # noqa
-            return token
+            return response["guest_token"]  # noqa
 
         raise GuestTokenNotFound(
             None,
@@ -87,7 +85,7 @@ class RequestMaker:
     def get_search_tweets(
         self,
         query: str,
-        search_filter: SearchFilter = "Latest",
+        search_filter: SearchFilter = "live",
         cursor: Optional[str] = None,
     ):
         response = self.__get_response__(

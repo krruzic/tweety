@@ -7,6 +7,7 @@ import warnings
 import dateutil.parser
 import openpyxl
 
+
 WORKBOOK_HEADERS = [
     "Created on",
     "author",
@@ -190,6 +191,9 @@ class Tweet(dict):
         self.comments = []
 
     def _get_id(self):
+        if self.__raw_tweet.get("id"):
+            return self.__raw_tweet["id"]
+
         if self.__raw_tweet.get("rest_id"):
             return self.__raw_tweet["rest_id"]
 
@@ -206,8 +210,11 @@ class Tweet(dict):
         return self.__raw_tweet
 
     def _get_author(self):
+        if self.__raw_tweet.get("user"):
+            return User(self.__raw_tweet["user"])
+
         if self.__raw_tweet.get("core"):
-            return User(self.__raw_tweet["core"]["user_results"]["result"])
+            return User(self.__raw_tweet["core"]["user_result"]["result"])
 
         if self.__raw_tweet.get("author"):
             return User(self.__raw_tweet["author"])
@@ -223,10 +230,36 @@ class Tweet(dict):
     def _get_threads(self):
         if not self.__raw_response:
             self.__raw_response = self.http.get_tweet_detail(self.id)
+        if self.__raw_tweet.get("in_reply_to_status_id"):
+            conversation = self.http.get_tweet_detail(
+                self.__raw_tweet["in_reply_to_status_id"]
+            )
+            if self.__raw_tweet["in_reply_to_screen_name"] == self.author.screen_name:
+                for tweet in conversation["data"]["timeline_response"]["instructions"][
+                    0
+                ]["entries"]:
+                    self.threads.append(
+                        Tweet(
+                            None,
+                            tweet["content"]["content"]["tweetResult"]["result"],
+                            self.http,
+                        )
+                    )
+            else:
+                for tweet in conversation["data"]["timeline_response"]["instructions"][
+                    0
+                ]["entries"]:
+                    self.comments.append(
+                        Tweet(
+                            None,
+                            tweet["content"]["content"]["tweetResult"]["result"],
+                            self.http,
+                        )
+                    )
 
-        for entry in self.__raw_response["data"][
-            "threaded_conversation_with_injections_v2"
-        ]["instructions"][0]["entries"]:
+        for entry in self.__raw_response["data"]["timeline_response"]["instructions"][
+            0
+        ]["entries"]:
             if str(entry["entryId"]).split("-")[0] == "conversationthread":
                 for item in entry["content"]["items"]:
                     try:
@@ -241,7 +274,7 @@ class Tweet(dict):
                                 self.threads.append(Tweet(None, tweet, self.http))
                             else:
                                 self.comments.append(Tweet(None, tweet, self.http))
-                    except KeyError as e:
+                    except KeyError:
                         pass
 
     def _get_quoted_tweet(self, is_quoted):
@@ -448,7 +481,7 @@ class Media(dict):
         self.__http = http
         self.display_url = self.__dictionary.get("display_url")
         self.expanded_url = self.__dictionary.get("expanded_url")
-        self.id = self.__dictionary.get("id_str")
+        self.id = self.__dictionary.get("rest_id")
         self.indices = self.__dictionary.get("indices")
         self.media_url_https = self.direct_url = self.__dictionary.get(
             "media_url_https"
@@ -569,7 +602,7 @@ class ShortUser(dict):
     def __init__(self, user_dict):
         super().__init__()
         self.__dictionary = user_dict
-        self.id = self.__dictionary.get("id_str")
+        self.id = self.__dictionary.get("rest_id")
         self.name = self.__dictionary.get("name")
         self.screen_name = self.username = self.__dictionary.get("screen_name")
 
@@ -764,8 +797,10 @@ class User(dict):
         return False if verified in (None, False) else True
 
     def get_id(self):
-        raw_id = self._json.get("id")
-
+        if self._json.get("rest_id"):
+            raw_id = self._json["rest_id"]
+        else:
+            raw_id = self._json["id"]
         if not str(raw_id).isdigit():
             raw_id = decodeBase64(raw_id).split(":")[-1]
 

@@ -6,7 +6,7 @@ PROXY_TYPE_SOCKS4 = SOCKS4 = 1
 PROXY_TYPE_SOCKS5 = SOCKS5 = 2
 PROXY_TYPE_HTTP = HTTP = 3
 
-SearchFilter = Literal["Latest", "users", "photos", "videos"]
+SearchFilter = Literal["live", "users", "photos", "videos"]
 
 
 class Proxy:

@@ -25,23 +25,13 @@ def return_with_headers(
 class UrlBuilder:
     URL_GUEST_TOKEN = "https://api.twitter.com/1.1/guest/activate.json"
     URL_API_INIT = "https://twitter.com/i/api/1.1/branch/init.json"
-    URL_USER_BY_SCREEN_NAME = (
-        "https://api.twitter.com/graphql/rePnxwe9LZ51nQ7Sn_xN_A/UserByScreenName"
-    )
-    URL_USER_TWEETS = (
-        "https://twitter.com/i/api/graphql/WzJjibAcDa-oCjCcLOotcg/UserTweets"
-    )
-    URL_USER_TWEETS_WITH_REPLIES = (
-        "https://twitter.com/i/api/graphql/nrdle2catTyGnTyj1Qa7wA/UserTweetsAndReplies"
-    )
     URL_TRENDS = "https://twitter.com/i/api/2/guide.json"
-    URL_TWEET_DETAILS = (
-        "https://twitter.com/i/api/graphql/1oIoGPTOJN2mSjbbXlQifA/TweetDetail"
-    )
     URL_AUSER_SETTINGS = "https://api.twitter.com/1.1/account/settings.json"  # noqa
-    URL_SEARCH = (
-        "https://twitter.com/i/api/graphql/gkjsKepM6gl_HmFWoWKfgg/SearchTimeline"
-    )
+    URL_USER_BY_SCREEN_NAME = "https://api.twitter.com/graphql/u7wQyGi6oExe8_TRWGMq4Q/UserResultByScreenNameQuery"
+    URL_USER_TWEETS = "https://twitter.com/i/api/graphql/3JNH4e9dq1BifLxAa3UMWg/UserWithProfileTweetsQueryV2"
+    URL_USER_TWEETS_WITH_REPLIES = "https://twitter.com/i/api/graphql/8IS8MaO-2EN6GZZZb8jF0g/UserWithProfileTweetsAndRepliesQueryV2"
+    URL_TWEET_DETAILS = "https://twitter.com/i/api/graphql/83h5UyHZ9wEKBVzALX8R_g/ConversationTimelineV2"
+    URL_SEARCH = "https://twitter.com/i/api/1.1/search/tweets.json"
     GQL_FEATURES = {
         "blue_business_profile_image_shape_enabled": False,
         "freedom_of_speech_not_reach_fetch_enabled": False,
@@ -70,6 +60,14 @@ class UrlBuilder:
         "creator_subscriptions_tweet_preview_api_enabled": False,
         "rweb_lists_timeline_redesign_enabled": False,
         "longform_notetweets_inline_media_enabled": True,
+        "super_follow_user_api_enabled": True,
+        "super_follow_badge_privacy_enabled": True,
+        "creator_subscriptions_subscription_count_enabled": True,
+        "super_follow_exclusive_tweet_notifications_enabled": True,
+        "subscriptions_verification_info_enabled": True,
+        "super_follow_tweet_api_enabled": True,
+        "unified_cards_ad_metadata_container_dynamic_card_content_query_enabled": True,
+        "android_graphql_skip_api_media_color_palette": True,
     }
 
     def __init__(self, cookies=None):
@@ -81,7 +79,7 @@ class UrlBuilder:
             "authority": "twitter.com",
             "accept": "*/*",
             "accept-language": "en-PK,en;q=0.9",
-            "authorization": "Bearer AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs%3D1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA",
+            "authorization": "Bearer AAAAAAAAAAAAAAAAAAAAAGHtAgAAAAAA%2Bx7ILXNILCqkSGIzy6faIHZ9s3Q%3DQy97w6SIrzE7lQwPJEYQBsArEE2fC25caFwRBvAGi456G09vGR",
             "content-type": "application/x-www-form-urlencoded",
             "referer": "https://twitter.com/",
             "sec-ch-ua": '"Not_A Brand";v="99", "Google Chrome";v="109", "Chromium";v="109"',
@@ -145,34 +143,20 @@ class UrlBuilder:
     def search(
         self,
         query: str,
-        search_type: SearchFilter = "Latest",
+        search_type: SearchFilter = "live",
         cursor: Optional[str] = None,
     ):
         variables = {
-            "rawQuery": query,
-            "count": 40,
-            "product": search_type,
-            "withDownvotePerspective": False,
-            "withReactionsMetadata": False,
-            "withReactionsPerspective": False,
-            "withSuperFollowsTweetFields": False,
+            "q": query,
+            "tweet_search_mode": search_type,
+            "max_id": cursor or "",
         }
-        features = self.GQL_FEATURES
-
-        if cursor:
-            variables["cursor"] = str(cursor)
-
-        params = {
-            "variables": str(json.dumps(variables)),
-            "features": str(json.dumps(features)),
-        }
-
-        return "GET", self._build(self.URL_SEARCH, urlencode(params))
+        return "GET", self._build(self.URL_SEARCH, urlencode(variables))
 
     @return_with_headers
     def user_tweets(self, user_id: int, replies=False, cursor=None):
         variables = {
-            "userId": str(user_id),
+            "rest_id": str(user_id),
             "count": 40,
             "includePromotedContent": True,
             "withQuickPromoteEligibilityTweetFields": True,
@@ -256,6 +240,7 @@ class UrlBuilder:
             "withReactionsPerspective": False,
             "withVoice": True,
             "withV2Timeline": True,
+            "includeHasBirdwatchNotes": True,
         }
         features = self.GQL_FEATURES
 

@@ -85,15 +85,9 @@ class SearchTweets(dict):
 
     def _get_cursor(self, response: dict) -> bool:
         try:
-            maybe_cursor = response["search_metadata"]["max_id"]
-            if maybe_cursor != 0:
-                new_cursor = str(maybe_cursor)
-            else:
-                new_cursor = (
-                    response["search_metadata"]["next_results"]
-                    .split("=")[1]
-                    .split("&q")[0]
-                )
+            new_cursor = (
+                response["search_metadata"]["next_results"].split("=")[1].split("&q")[0]
+            )
             if new_cursor == self.cursor:
                 return False
             self.cursor = new_cursor

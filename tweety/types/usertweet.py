@@ -12,12 +12,14 @@ class UserTweets(dict):
         http,
         pages: int = 1,
         get_replies: bool = True,
+        get_retweets: bool = True,
         wait_time: int = 2,
         cursor: Optional[str] = None,
     ):
         super().__init__()
         self.tweets = []
         self.get_replies = get_replies
+        self.get_retweets = get_retweets
         self.cursor = cursor
         self.is_next_page = True
         self.http = http
@@ -75,6 +77,8 @@ class UserTweets(dict):
                 for tweet in tweets:
                     try:
                         parsed = Tweet(response, tweet, self.http)
+                        if parsed.is_retweet and not self.get_retweets:
+                            continue
                         _tweets.append(parsed)
                         # yield parsed
                     except BaseException:

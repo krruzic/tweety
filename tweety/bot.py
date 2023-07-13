@@ -93,6 +93,7 @@ class Twitter:
         username: Union[str, int, User],
         pages: int = 1,
         replies: bool = False,
+        retweets: bool = False,
         wait_time: int = 2,
         cursor: Optional[str] = None,
     ):
@@ -102,6 +103,7 @@ class Twitter:
         :param: username: (`str` | `int` | `User`) username of the user whom to get the tweets of
         :param: pages: (`int`) number of pages to be scraped
         :param: replies: (`boolean`) get the replied tweets of the user too
+        :param: retweets: (`boolean`) get the retweets of the user too
         :param: wait_time: (`int`) seconds to wait between multiple requests
         :param: cursor: Pagination cursor if you want to get the pages
                         from that cursor up-to (This cursor is different from actual API cursor)
@@ -114,7 +116,7 @@ class Twitter:
         user_id = self._get_user_id(username)
 
         user_tweets = UserTweets(
-            user_id, self.request, pages, replies, wait_time, cursor
+            user_id, self.request, pages, replies, retweets, wait_time, cursor
         )
 
         # TODO : Find proper way to run the generator
@@ -127,6 +129,7 @@ class Twitter:
         username: Union[str, int, User],
         pages: int = 1,
         replies: bool = False,
+        retweets: bool = False,
         wait_time: int = 2,
         cursor: Optional[str] = None,
     ):
@@ -145,7 +148,7 @@ class Twitter:
         user_id = self._get_user_id(username)
 
         user_tweets = UserTweets(
-            user_id, self.request, pages, replies, wait_time, cursor
+            user_id, self.request, pages, replies, retweets, wait_time, cursor
         )
 
         return user_tweets.generator()

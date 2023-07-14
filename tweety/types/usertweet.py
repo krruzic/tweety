@@ -1,7 +1,7 @@
 import time
 from typing import List, Optional
 
-from ..exceptions import UserNotFound, UserProtected
+from ..exceptions import UserNotFound
 from . import Excel, Tweet, deprecated
 
 
@@ -42,7 +42,10 @@ class UserTweets(dict):
     @staticmethod
     def _get_tweet_content_key(tweet: dict) -> List[dict]:
         if str(tweet["entryId"]).split("-")[0] == "tweet":
-            return [tweet["content"]["content"]["tweetResult"]["result"]]
+            try:
+                return [tweet["content"]["content"]["tweetResult"]["result"]]
+            except KeyError:
+                return []
 
         if str(tweet["entryId"]).split("-")[0] == "homeConversation":
             return [

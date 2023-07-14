@@ -142,7 +142,7 @@ class Tweet(dict):
                 self[key] = value
 
     def __repr__(self):
-        return f"Tweet(id={self.id}, author={self.author}, created_on={self.created_on}, threads={len(self.threads) if self.threads else None})"  # noqa
+        return f'Tweet(id={self.id}, author={self.author}, created_on={self.created_on}, threads={len(self.threads) if self.threads else None}, text="{self.text}")'  # noqa
 
     def __iter__(self):
         if self.threads:  # noqa

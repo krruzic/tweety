@@ -590,7 +590,7 @@ class MediaSize(dict):
         self.name = self["name"] = name
         self.width = self["width"] = self._json["w"]
         self.height = self["height"] = self._json["h"]
-        self.resize = self["resize"] = self._json["resize"]
+        self.resize = self["resize"] = self._json.get("resize", "")
 
     def __repr__(self):
         return "MediaSize(name={}, width={}, height={}, resize={})".format(

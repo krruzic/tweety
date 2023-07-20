@@ -7,6 +7,8 @@ import warnings
 import dateutil.parser
 import openpyxl
 
+from tweety.utils import walk_dict
+
 
 WORKBOOK_HEADERS = [
     "Created on",
@@ -402,6 +404,8 @@ class Tweet(dict):
 
     @staticmethod
     def _get_tweet_text(original_tweet, is_retweet):
+        walk_dict(original_tweet)
+        print(original_tweet)
         if is_retweet and original_tweet.get("retweeted_status_result"):
             if not original_tweet["retweeted_status_result"]["result"].get("legacy"):
                 return original_tweet["retweeted_status_result"]["result"]["tweet"][
@@ -414,6 +418,9 @@ class Tweet(dict):
 
         if original_tweet.get("full_text"):
             return original_tweet["full_text"]
+
+        if original_tweet.get("text"):
+            return original_tweet["text"]
 
         return ""
 

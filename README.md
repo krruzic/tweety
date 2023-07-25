@@ -1,20 +1,9 @@
 # tweety
-Twitter's API is annoying to work with, and has lots of limitations — luckily their frontend (JavaScript) has it's own API, which I reverse–engineered. No API rate limits. No restrictions. Extremely fast.
-
-[![Downloads](https://static.pepy.tech/personalized-badge/tweety-ns?period=total&units=international_system&left_color=orange&right_color=blue&left_text=Downloads)](https://pepy.tech/project/tweety-ns)
-## Prerequisites
-
-Before you begin, ensure you have met the following requirements:
-
-* Internet Connection
-* Python 3.6+
-* httpx 
-* openpyxl
-* tqdm
+Forked from `tweety-ns`. High performance reverse engineered API to twitter. Supports search, user tweets and more. No login required!
 
 ## Installation: 
 ```bash
-pip install tweety-ns
+pip install https://github.com/krruzic/tweety
 ```
 
 ## Keep synced with latest fixes
@@ -22,7 +11,7 @@ pip install tweety-ns
 ##### **Pip might not be always updated , so to keep everything synced.**
 
 ```bash
-pip install https://github.com/mahrtayyab/tweety/archive/main.zip --upgrade --force-reinstall
+pip install https://github.com/krruzic/tweety/archive/main.zip --upgrade --force-reinstall
 ```
 
 ## A Quick Example:
@@ -36,4 +25,4 @@ pip install https://github.com/mahrtayyab/tweety/archive/main.zip --upgrade --fo
       print(tweet)
 ```
 
-Full Documentation and Changelogs are [here](https://mahrtayyab.github.io/tweety_docs/)
+Full Documentation and Changelogs are [here](https://tweety.readthedocs.io/en/latest/) but may be outdated
